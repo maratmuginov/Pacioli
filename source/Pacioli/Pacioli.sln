@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31005.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pacioli.Tests", "Pacioli.Tests\Pacioli.Tests.csproj", "{6AB64050-1B2B-401D-9443-1C43CC9E7CBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pacioli.Lib", "Pacioli.Lib\Pacioli.Lib.csproj", "{1BED4409-BA2B-40A9-838C-27B96E270986}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AB64050-1B2B-401D-9443-1C43CC9E7CBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AB64050-1B2B-401D-9443-1C43CC9E7CBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AB64050-1B2B-401D-9443-1C43CC9E7CBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AB64050-1B2B-401D-9443-1C43CC9E7CBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BED4409-BA2B-40A9-838C-27B96E270986}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BED4409-BA2B-40A9-838C-27B96E270986}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BED4409-BA2B-40A9-838C-27B96E270986}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BED4409-BA2B-40A9-838C-27B96E270986}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EB1DEB04-7E80-40A8-9B62-28111D004B8D}
+	EndGlobalSection
+EndGlobal
