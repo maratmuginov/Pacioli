@@ -1,6 +1,6 @@
 ﻿namespace Pacioli.Lib.Models
 {
-    public class JournalItem
+    public class JournalEntryItem
     {
         public decimal Amount { get; set; }
     }

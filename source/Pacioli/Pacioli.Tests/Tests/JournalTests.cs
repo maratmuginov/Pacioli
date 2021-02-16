@@ -1,27 +1,21 @@
-﻿using System;
-using Pacioli.Lib.Models;
-using Pacioli.Tests.Helpers;
+﻿using Pacioli.Lib.Models;
 using Xunit;
 
 namespace Pacioli.Tests.Tests
 {
     public class JournalTests
     {
-        private static readonly JournalItem[] DebitItems = { new() { Amount = 0m } };
-        private static readonly JournalItem[] CreditItems = { new() { Amount = 1m } };
-        public static readonly JournalEntryTheoryData UnbalancedJournalEntries = new (DebitItems, CreditItems);
-
-        [Theory, MemberData(nameof(UnbalancedJournalEntries))]
-        public void JournalDoesNotAcceptUnbalancedEntries(JournalItem[] debits, JournalItem[] credits)
+        [Theory, InlineData(10, 0), InlineData(210, 853)]
+        public void JournalDoesNotAcceptUnbalancedEntries(decimal debit, decimal credit)
         {
             var journal = new Journal();
+            var journalEntry = new JournalEntry();
 
-            journal.AddDebits(debits);
-            journal.AddCredits(credits);
-
-            Assert.Throws<Exception>(journal.Commit);
+            journalEntry.Debits.Add(new JournalEntryItem { Amount = debit });
+            journalEntry.Credits.Add(new JournalEntryItem { Amount = credit });
+            bool postSuccessful = journal.PostEntry(journalEntry);
+            
+            Assert.False(postSuccessful);
         }
-
-        //TODO : Write a test to enforce double-entry. 
     }
 }
