@@ -25,7 +25,7 @@ namespace Pacioli.Tests.Tests
         [Theory, ClassData(typeof(JournalEntryHasToHaveCreditAndDebit_TestData))]
         public void JournalEntry_Throws_Exception_On_Empty_Credit_Or_Debit(List<JournalEntryItem> debits, List<JournalEntryItem> credits)
         {
-            Assert.Throws<ArgumentException>(() => new JournalEntry(debits: debits, credits: credits));
+            Assert.ThrowsAny<Exception>(() => new JournalEntry(debits: debits, credits: credits));
         }
 
         private record JournalEntryHasToHaveCreditAndDebit_TestData : IEnumerable<object[]>

@@ -15,7 +15,10 @@ namespace Pacioli.Lib.Models
 
         public JournalEntry([NotNull] List<JournalEntryItem> debits, [NotNull] List<JournalEntryItem> credits)
         {
-            if ((!debits?.Any() ?? false) || (!credits?.Any() ?? false))
+            if (debits is null || credits is null)
+                throw new ArgumentNullException("Debits and credits should not be null");
+
+            if (!debits.Any() || !credits.Any())
                 throw new ArgumentException("Debits and credits length should not be empty.");
         }
 
