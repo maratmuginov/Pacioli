@@ -37,11 +37,6 @@ namespace Pacioli.Tests.Tests
                     new List<JournalEntryItem>(),
                     new List<JournalEntryItem>()
                 };
-                //yield return new object[]
-                //{
-                //    new List<JournalEntryItem>{ new JournalEntryItem() },
-                //    new List<JournalEntryItem>{ new JournalEntryItem() }
-                //};
                 yield return new object[]
                 {
                     new List<JournalEntryItem>{ new JournalEntryItem { Amount = 1m } },
