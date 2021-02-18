@@ -3,57 +3,108 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Pacioli.Tests.Tests
 {
     public class JournalTests
     {
-        [Theory, InlineData(10, 0), InlineData(210, 853)]
-        public void JournalDoesNotAcceptUnbalancedEntries(decimal debit, decimal credit)
+        [Fact]
+        public void JournalEntryMayHaveDescription()
         {
-            var journal = new Journal();
-            var journalEntry = new JournalEntry();
+            var sut = typeof(JournalEntry);
+            var properties = sut.GetProperties();
 
-            journalEntry.Debits.Add(new JournalEntryItem(debit));
-            journalEntry.Credits.Add(new JournalEntryItem(credit));
-            bool postSuccessful = journal.PostEntry(journalEntry);
+            var descriptionProperty = properties
+                .FirstOrDefault(prop => prop.PropertyType == typeof(string)
+                                        && prop.Name == "Description");
+
+            Assert.NotNull(descriptionProperty);
+        }
+
+        [Fact]
+        public void JournalEntryItemPropertiesCanBeRead()
+        {
+            var sut = typeof(JournalEntryLine);
+            var properties = sut.GetProperties();
+
+            bool propertiesCanBeRead = properties.All(prop => prop.CanRead);
+
+            Assert.True(propertiesCanBeRead);
+        }
+
+        [Fact]
+        public void JournalEntryItemPropertiesAreImmutable()
+        {
+            var sut = typeof(JournalEntryLine);
+            var properties = sut.GetProperties();
+
+            bool propertiesAreImmutable = properties.All(prop => prop.CanWrite is false);
+
+            Assert.True(propertiesAreImmutable);
+        }
+
+        [Theory, ClassData(typeof(JournalDoesNotAcceptUnbalancedEntries_TestData))]
+        public void JournalDoesNotAcceptUnbalancedEntries(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
+        {
+            var sut = new Journal();
+            var journalEntry = new JournalEntry(date, debits, credits);
+            
+            bool postSuccessful = sut.PostEntry(journalEntry);
 
             Assert.False(postSuccessful);
         }
 
-        [Theory, ClassData(typeof(JournalEntryThrowsExceptionOnInvalidArgument_TestData))]
-        public void JournalEntryThrowsExceptionOnInvalidArgument(Account account, DateTime date, List<JournalEntryItem> debits, List<JournalEntryItem> credits)
-        {
-            JournalEntry CreateJournalEntry() => new JournalEntry(account, date, debits, credits);
-            Assert.ThrowsAny<Exception>(CreateJournalEntry);
-        }
-
-        private record JournalEntryThrowsExceptionOnInvalidArgument_TestData : IEnumerable<object[]>
+        private class JournalDoesNotAcceptUnbalancedEntries_TestData : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
                 yield return new object[]
                 {
-                    null,
+                    DateTime.UtcNow, 
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), 10m) },
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), -20m) }
+                };
+                yield return new object[]
+                {
+                    DateTime.UtcNow,
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), -8324m) },
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), 2313m) }
+                };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        [Theory, ClassData(typeof(JournalEntryThrowsExceptionOnInvalidArgument_TestData))]
+        public void JournalEntryThrowsExceptionOnInvalidArgument(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
+        {
+            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            
+            Assert.ThrowsAny<Exception>(CreateJournalEntry);
+        }
+
+        private class JournalEntryThrowsExceptionOnInvalidArgument_TestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[]
+                {
                     new DateTime(),
-                    new List<JournalEntryItem>(),
-                    new List<JournalEntryItem>()
+                    new List<JournalEntryLine>(),
+                    new List<JournalEntryLine>()
                 };
                 yield return new object[]
                 {
                     null,
-                    null,
-                    new List<JournalEntryItem>{ new JournalEntryItem(1m) },
-                    new List<JournalEntryItem>()
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 1m) },
+                    new List<JournalEntryLine>()
                 };
                 yield return new object[]
                 {
-                    new Account("Test Account"),
                     null,
-                    new List<JournalEntryItem>(),
-                    new List<JournalEntryItem>{ new JournalEntryItem(1m) }
+                    new List<JournalEntryLine>(),
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 1m) }
                 };
             }
 
@@ -61,31 +112,30 @@ namespace Pacioli.Tests.Tests
         }
 
         [Theory, ClassData(typeof(JournalEntryDoesNotThrowExceptionWithValidArguments_TestData))]
-        public void JournalEntryDoesNotThrowExceptionWithValidArguments(Account account, DateTime date, List<JournalEntryItem> debits, List<JournalEntryItem> credits)
+        public void JournalEntryDoesNotThrowExceptionWithValidArguments(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(account, date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
 
             var exception = Record.Exception(CreateJournalEntry);
+
             Assert.Null(exception);
         }
 
-        private record JournalEntryDoesNotThrowExceptionWithValidArguments_TestData : IEnumerable<object[]>
+        private class JournalEntryDoesNotThrowExceptionWithValidArguments_TestData : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
                 yield return new object[]
                 {
-                    new Account("SomeAccount"),
                     DateTime.UtcNow,
-                    new List<JournalEntryItem>{ new JournalEntryItem(1m) },
-                    new List<JournalEntryItem>{ new JournalEntryItem(1m) }
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 1m) },
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 1m) }
                 };
                 yield return new object[]
                 {
-                    new Account("AnotherAccount"),
                     new DateTime(2020, 2, 15),
-                    new List<JournalEntryItem>{ new JournalEntryItem(10_101m) },
-                    new List<JournalEntryItem>{ new JournalEntryItem(111_111m) }
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 10_101m) },
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 111_111m) }
                 };
             }
 
@@ -93,32 +143,32 @@ namespace Pacioli.Tests.Tests
         }
 
         [Theory, ClassData(typeof(JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData))]
-        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(Account account, DateTime date, List<JournalEntryItem> debits, List<JournalEntryItem> credits)
+        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
         {
-            JournalEntry sut = new(account, date, debits, credits);
+            JournalEntry sut = new(date, debits, credits);
+            
             var debitsNotInDebits = debits.Except(sut.Debits);
             var creditsNotInCredits = credits.Except(sut.Credits);
-            Assert.True(sut.Account == account && sut.Date == date.Date 
-                && (debitsNotInDebits.Any() is false) && (creditsNotInCredits.Any() is false));
+            
+            Assert.True(sut.Date == date);
+            Assert.True(debitsNotInDebits.Any() is false && creditsNotInCredits.Any() is false);
         }
 
-        private record JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData : IEnumerable<object[]>
+        private class JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
                 yield return new object[]
                 {
-                    new Account("SomeAccount"),
                     DateTime.UtcNow,
-                    new List<JournalEntryItem>{ new JournalEntryItem(1m) },
-                    new List<JournalEntryItem>{ new JournalEntryItem(1m) }
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 1m) },
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 1m) }
                 };
                 yield return new object[]
                 {
-                    new Account("AnotherAccount"),
                     new DateTime(2020, 2, 15),
-                    new List<JournalEntryItem>{ new JournalEntryItem(10_101m) },
-                    new List<JournalEntryItem>{ new JournalEntryItem(111_111m) }
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 10_101m) },
+                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 111_111m) }
                 };
             }
 
