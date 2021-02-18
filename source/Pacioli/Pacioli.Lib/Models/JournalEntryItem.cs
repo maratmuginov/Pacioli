@@ -7,6 +7,6 @@
             Amount = amount;
         }
 
-        public decimal Amount { get; }
+        public decimal Amount { get; init; }
     }
 }
