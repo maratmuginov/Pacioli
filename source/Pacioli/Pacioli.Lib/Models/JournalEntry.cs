@@ -13,13 +13,30 @@ namespace Pacioli.Lib.Models
             Credits = new List<JournalEntryItem>();
         }
 
-        public JournalEntry([NotNull] List<JournalEntryItem> debits, [NotNull] List<JournalEntryItem> credits)
+        public JournalEntry([NotNull]Account account, DateTime date, [NotNull] List<JournalEntryItem> debits, [NotNull] List<JournalEntryItem> credits)
         {
-            if (debits is null || credits is null)
-                throw new ArgumentNullException("Debits and credits should not be null");
+            var referenceParams = new object[] { debits, credits, account };
+            if (referenceParams.Any(param => param is null))
+                throw new ArgumentNullException("Debits, credits and account should not be null");
+
+            if (date == DateTime.MinValue)
+                throw new ArgumentException("Please specify a valid date");
 
             if (!debits.Any() || !credits.Any())
-                throw new ArgumentException("Debits and credits length should not be empty.");
+                throw new ArgumentException("Debits and credits should contain at least one JournalEntryItem.");
+
+            Account = new(account.Name);
+            _date = date;
+            Debits = new List<JournalEntryItem>(debits);
+            Credits = new List<JournalEntryItem>(credits);
+        }
+
+        public Account Account { get; init; }
+
+        private DateTime _date;
+        public DateTime Date 
+        {
+            get => _date.Date;
         }
 
         public List<JournalEntryItem> Debits { get; set; }
