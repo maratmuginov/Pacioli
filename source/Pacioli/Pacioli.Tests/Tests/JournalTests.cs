@@ -26,8 +26,8 @@ namespace Pacioli.Tests.Tests
         [Theory, ClassData(typeof(JournalEntryThrowsExceptionOnInvalidArgument_TestData))]
         public void JournalEntryThrowsExceptionOnInvalidArgument(Account account, DateTime date, List<JournalEntryItem> debits, List<JournalEntryItem> credits)
         {
-            Action sut = () => new JournalEntry(account: account, date: date, debits: debits, credits: credits);
-            Assert.ThrowsAny<Exception>(sut);
+            JournalEntry CreateJournalEntry() => new JournalEntry(account, date, debits, credits);
+            Assert.ThrowsAny<Exception>(CreateJournalEntry);
         }
 
         private record JournalEntryThrowsExceptionOnInvalidArgument_TestData : IEnumerable<object[]>
@@ -63,11 +63,46 @@ namespace Pacioli.Tests.Tests
         [Theory, ClassData(typeof(JournalEntryDoesNotThrowExceptionWithValidArguments_TestData))]
         public void JournalEntryDoesNotThrowExceptionWithValidArguments(Account account, DateTime date, List<JournalEntryItem> debits, List<JournalEntryItem> credits)
         {
-            var exception = Record.Exception(() => new JournalEntry(account: account, date: date, debits: debits, credits: credits));
+            JournalEntry CreateJournalEntry() => new JournalEntry(account, date, debits, credits);
+
+            var exception = Record.Exception(CreateJournalEntry);
             Assert.Null(exception);
         }
 
         private record JournalEntryDoesNotThrowExceptionWithValidArguments_TestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[]
+                {
+                    new Account("SomeAccount"),
+                    DateTime.UtcNow,
+                    new List<JournalEntryItem>{ new JournalEntryItem(1m) },
+                    new List<JournalEntryItem>{ new JournalEntryItem(1m) }
+                };
+                yield return new object[]
+                {
+                    new Account("AnotherAccount"),
+                    new DateTime(2020, 2, 15),
+                    new List<JournalEntryItem>{ new JournalEntryItem(10_101m) },
+                    new List<JournalEntryItem>{ new JournalEntryItem(111_111m) }
+                };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        [Theory, ClassData(typeof(JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData))]
+        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(Account account, DateTime date, List<JournalEntryItem> debits, List<JournalEntryItem> credits)
+        {
+            JournalEntry sut = new(account, date, debits, credits);
+            var debitsNotInDebits = debits.Except(sut.Debits);
+            var creditsNotInCredits = credits.Except(sut.Credits);
+            Assert.True(sut.Account == account && sut.Date == date.Date 
+                && (debitsNotInDebits.Any() is false) && (creditsNotInCredits.Any() is false));
+        }
+
+        private record JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
