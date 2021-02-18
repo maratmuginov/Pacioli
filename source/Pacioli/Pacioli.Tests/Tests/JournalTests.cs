@@ -3,12 +3,80 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace Pacioli.Tests.Tests
 {
     public class JournalTests
     {
+        //Enforce immutability all the way down.
+        [Fact]
+        public void JournalEntryPropertiesAreImmutable()
+        {
+            var sut = typeof(JournalEntry);
+            var properties = sut.GetProperties();
+
+            var anyPropertyIsMutable = AnyPropertyIsMutable(properties);
+
+            Assert.False(anyPropertyIsMutable);
+        }
+
+        private static bool AnyPropertyIsMutable(IEnumerable<PropertyInfo> properties)
+        {
+            return properties.Any(prop =>
+            {
+                var genericTypeArgs = prop.PropertyType.GenericTypeArguments;
+                if (genericTypeArgs.Any())
+                {
+                    //Check if T in ICollection<T> is also mutable.
+                    var genericTypeProperties = genericTypeArgs.SelectMany(type => type.GetProperties());
+                    return prop.CanWrite && AnyPropertyIsMutable(genericTypeProperties);
+                }
+                return prop.CanWrite;
+            });
+        }
+
+        [Fact]
+        public void AccountsAreComparedByValueSemantics()
+        {
+            const string accountName = "Account";
+            var account = new Account(accountName);
+            var sameAccount = new Account(accountName);
+
+            Assert.Equal(account, sameAccount);
+        }
+
+        [Theory, ClassData(typeof(AccountsAreExclusiveToDebitOrCreditSide_TestData))]
+        public void AccountsAreExclusiveToDebitOrCreditSide(DateTime date, List<JournalEntryLine> debits, 
+            List<JournalEntryLine> credits)
+        {
+            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            
+            Assert.Throws<ArgumentException>(CreateJournalEntry);
+        }
+        
+        private class AccountsAreExclusiveToDebitOrCreditSide_TestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[]
+                {
+                    DateTime.UtcNow, 
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), 1m) },
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), -1m) },
+                };
+                yield return new object[]
+                {
+                    DateTime.UtcNow, 
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), 5.23m) },
+                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), -5.23m) },
+                };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        
         [Fact]
         public void JournalEntryMayHaveDescription()
         {
@@ -175,4 +243,6 @@ namespace Pacioli.Tests.Tests
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }
+
+    
 }
