@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System;
 
 namespace Pacioli.Lib.Models
 {
@@ -24,7 +24,7 @@ namespace Pacioli.Lib.Models
                 throw new ArgumentException("Please specify a valid date");
 
             if (!debits.Any() || !credits.Any())
-                throw new ArgumentException("Debits and credits should contain at least one JournalEntryItem.");
+                throw new ArgumentException($"Debits and credits should contain at least one {nameof(JournalEntryLine)}.");
 
             var creditAccounts = credits.Select(credit => credit.Account);
             var debitAccounts = debits.Select(debit => debit.Account);
