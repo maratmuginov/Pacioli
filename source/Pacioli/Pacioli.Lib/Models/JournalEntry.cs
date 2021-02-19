@@ -26,9 +26,8 @@ namespace Pacioli.Lib.Models
             if (!debits.Any() || !credits.Any())
                 throw new ArgumentException($"Debits and credits should contain at least one {nameof(JournalEntryLine)}.");
 
-            var creditAccounts = credits.Select(credit => credit.Account);
-            var debitAccounts = debits.Select(debit => debit.Account);
-            if (debitAccounts.Any(debitAccount => creditAccounts.Contains(debitAccount)))
+            bool hasCommonAccount = debits.Any(dr => credits.Any(cr => dr.Account == cr.Account));
+            if (hasCommonAccount)
                 throw new ArgumentException("Accounts should be exclusive to debit or credit side of the journal entry.");
             
             Date = date;
