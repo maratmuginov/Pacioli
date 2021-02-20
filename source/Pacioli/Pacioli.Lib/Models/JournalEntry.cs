@@ -1,45 +1,43 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System;
 
 namespace Pacioli.Lib.Models
 {
     public record JournalEntry
     {
-        public JournalEntry()
+        public JournalEntry(DateTime date, string description, 
+            [NotNull] List<JournalEntryLine> debits, [NotNull] List<JournalEntryLine> credits) : 
+            this(date, debits, credits)
         {
-            Debits = new List<JournalEntryItem>();
-            Credits = new List<JournalEntryItem>();
+            this.Description = description;
         }
 
-        public JournalEntry([NotNull]Account account, DateTime date, [NotNull] List<JournalEntryItem> debits, [NotNull] List<JournalEntryItem> credits)
+        public JournalEntry(DateTime date, [NotNull] List<JournalEntryLine> debits, [NotNull] List<JournalEntryLine> credits)
         {
-            var referenceParams = new object[] { debits, credits, account };
+            var referenceParams = new object[] { debits, credits };
             if (referenceParams.Any(param => param is null))
-                throw new ArgumentNullException("Debits, credits and account should not be null");
+                throw new ArgumentNullException("Debits and credits should not be null");
 
             if (date == DateTime.MinValue)
                 throw new ArgumentException("Please specify a valid date");
 
             if (!debits.Any() || !credits.Any())
-                throw new ArgumentException("Debits and credits should contain at least one JournalEntryItem.");
+                throw new ArgumentException($"Debits and credits should contain at least one {nameof(JournalEntryLine)}.");
 
-            Account = new(account.Name);
-            _date = date;
-            Debits = new List<JournalEntryItem>(debits);
-            Credits = new List<JournalEntryItem>(credits);
+            bool hasCommonAccount = debits.Any(dr => credits.Any(cr => dr.Account == cr.Account));
+            if (hasCommonAccount)
+                throw new ArgumentException("Accounts should be exclusive to debit or credit side of the journal entry.");
+            
+            Date = date;
+            Debits = new List<JournalEntryLine>(debits);
+            Credits = new List<JournalEntryLine>(credits);
         }
 
-        public Account Account { get; init; }
-
-        private DateTime _date;
-        public DateTime Date 
-        {
-            get => _date.Date;
-        }
-
-        public List<JournalEntryItem> Debits { get; set; }
-        public List<JournalEntryItem> Credits { get; set; }
+        public DateTime Date { get; }
+        public string Description { get; }
+        public List<JournalEntryLine> Debits { get; }
+        public List<JournalEntryLine> Credits { get; }
     }
 }
