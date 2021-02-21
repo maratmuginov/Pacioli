@@ -18,9 +18,9 @@ namespace Pacioli.Tests.Tests
             var sut = new JournalEntry(date, debits, credits);
             const decimal expectedVariance = 0m;
 
-            decimal debitsSum = Math.Abs(sut.Debits.Sum(dr => dr.Amount));
-            decimal creditsSum = Math.Abs(sut.Credits.Sum(cr => cr.Amount));
-            var actualVariance = debitsSum - creditsSum;
+            decimal debitsSum = sut.Debits.Sum(dr => dr.Amount);
+            decimal creditsSum = sut.Credits.Sum(cr => cr.Amount);
+            var actualVariance = debitsSum + creditsSum;
 
             Assert.Equal(expectedVariance, actualVariance);
         }
