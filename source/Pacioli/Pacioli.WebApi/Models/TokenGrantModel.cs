@@ -2,10 +2,10 @@
 
 namespace Pacioli.WebApi.Models
 {
-    public sealed class TokenGrantModel
+    public class TokenGrantModel
     {
-        public string Token { get; set; }
-        public DateTime Expiration { get; set; }
-        public string Email { get; set; }
+        public string Token { get; init; }
+        public DateTime Expiration { get; init; }
+        public string Email { get; init; }
     }
 }
