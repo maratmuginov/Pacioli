@@ -1,4 +1,5 @@
-﻿using Pacioli.Lib.Models;
+﻿using Pacioli.Lib.Contracts.Models;
+using Pacioli.Lib.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +11,44 @@ namespace Pacioli.Tests.Tests
 {
     public class JournalTests
     {
-        //Enforce immutability all the way down.
+        [Theory, ClassData(typeof(JournalEntriesAreBalancedByNetZeroNormalBalance_TestData))]
+        public void JournalEntriesAreBalancedByNetZeroNormalBalance(DateTime date, 
+            List<JournalEntryDebitLine> debits, List<JournalEntryCreditLine> credits)
+        {
+            var sut = new JournalEntry(date, debits, credits);
+            const decimal expectedVariance = 0m;
+
+            decimal debitsSum = sut.Debits.Sum(dr => dr.Amount);
+            decimal creditsSum = sut.Credits.Sum(cr => cr.Amount);
+            var actualVariance = debitsSum + creditsSum;
+
+            Assert.Equal(expectedVariance, actualVariance);
+        }
+
+        private class JournalEntriesAreBalancedByNetZeroNormalBalance_TestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[]
+                {
+                    DateTime.UtcNow, 
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 100m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -100m)
+                    }
+                };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
         [Fact]
         public void JournalEntryPropertiesAreImmutable()
         {
@@ -41,15 +79,16 @@ namespace Pacioli.Tests.Tests
         public void AccountsAreComparedByValueSemantics()
         {
             const string accountName = "Account";
-            var account = new Account(accountName);
-            var sameAccount = new Account(accountName);
+            var account = new Account(accountName, NormalBalance.Debit);
+            var sameAccount = new Account(accountName, NormalBalance.Debit);
 
             Assert.Equal(account, sameAccount);
         }
 
         [Theory, ClassData(typeof(AccountsAreExclusiveToDebitOrCreditSide_TestData))]
-        public void AccountsAreExclusiveToDebitOrCreditSide(DateTime date, List<JournalEntryLine> debits, 
-            List<JournalEntryLine> credits)
+        public void AccountsAreExclusiveToDebitOrCreditSide(DateTime date, 
+            List<JournalEntryDebitLine> debits, 
+            List<JournalEntryCreditLine> credits)
         {
             JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
             
@@ -63,14 +102,26 @@ namespace Pacioli.Tests.Tests
                 yield return new object[]
                 {
                     DateTime.UtcNow, 
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), 1m) },
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), -1m) },
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Account", NormalBalance.Debit), -1m)
+                    }
                 };
                 yield return new object[]
                 {
                     DateTime.UtcNow, 
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), 5.23m) },
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), -5.23m) },
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Another Account", NormalBalance.Debit), 5.23m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Debit), -5.23m)
+                    },
                 };
             }
 
@@ -93,7 +144,7 @@ namespace Pacioli.Tests.Tests
         [Fact]
         public void JournalEntryItemPropertiesCanBeRead()
         {
-            var sut = typeof(JournalEntryLine);
+            var sut = typeof(IJournalEntryLine);
             var properties = sut.GetProperties();
 
             bool propertiesCanBeRead = properties.All(prop => prop.CanRead);
@@ -104,7 +155,7 @@ namespace Pacioli.Tests.Tests
         [Fact]
         public void JournalEntryItemPropertiesAreImmutable()
         {
-            var sut = typeof(JournalEntryLine);
+            var sut = typeof(IJournalEntryLine);
             var properties = sut.GetProperties();
 
             bool propertiesAreImmutable = properties.All(prop => prop.CanWrite is false);
@@ -113,14 +164,13 @@ namespace Pacioli.Tests.Tests
         }
 
         [Theory, ClassData(typeof(JournalDoesNotAcceptUnbalancedEntries_TestData))]
-        public void JournalDoesNotAcceptUnbalancedEntries(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
+        public void JournalDoesNotAcceptUnbalancedEntries(DateTime date, 
+            List<JournalEntryDebitLine> debits, 
+            List<JournalEntryCreditLine> credits)
         {
-            var sut = new Journal();
-            var journalEntry = new JournalEntry(date, debits, credits);
-            
-            bool postSuccessful = sut.PostEntry(journalEntry);
+            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
 
-            Assert.False(postSuccessful);
+            Assert.ThrowsAny<Exception>(CreateJournalEntry);
         }
 
         private class JournalDoesNotAcceptUnbalancedEntries_TestData : IEnumerable<object[]>
@@ -130,14 +180,26 @@ namespace Pacioli.Tests.Tests
                 yield return new object[]
                 {
                     DateTime.UtcNow, 
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), 10m) },
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), -20m) }
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 10m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -20m)
+                    }
                 };
                 yield return new object[]
                 {
                     DateTime.UtcNow,
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Account"), -8324m) },
-                    new List<JournalEntryLine> { new JournalEntryLine(new Account("Another Account"), 2313m) }
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 8324m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -2313m)
+                    }
                 };
             }
 
@@ -145,7 +207,9 @@ namespace Pacioli.Tests.Tests
         }
 
         [Theory, ClassData(typeof(JournalEntryThrowsExceptionOnInvalidArgument_TestData))]
-        public void JournalEntryThrowsExceptionOnInvalidArgument(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
+        public void JournalEntryThrowsExceptionOnInvalidArgument(DateTime date, 
+            List<JournalEntryDebitLine> debits, 
+            List<JournalEntryCreditLine> credits)
         {
             JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
             
@@ -159,20 +223,26 @@ namespace Pacioli.Tests.Tests
                 yield return new object[]
                 {
                     new DateTime(),
-                    new List<JournalEntryLine>(),
-                    new List<JournalEntryLine>()
+                    new List<JournalEntryDebitLine>(),
+                    new List<JournalEntryCreditLine>()
                 };
                 yield return new object[]
                 {
                     null,
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 1m) },
-                    new List<JournalEntryLine>()
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
+                    },
+                    new List<JournalEntryCreditLine>()
                 };
                 yield return new object[]
                 {
                     null,
-                    new List<JournalEntryLine>(),
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 1m) }
+                    new List<JournalEntryDebitLine>(),
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -1m)
+                    }
                 };
             }
 
@@ -180,7 +250,9 @@ namespace Pacioli.Tests.Tests
         }
 
         [Theory, ClassData(typeof(JournalEntryDoesNotThrowExceptionWithValidArguments_TestData))]
-        public void JournalEntryDoesNotThrowExceptionWithValidArguments(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
+        public void JournalEntryDoesNotThrowExceptionWithValidArguments(DateTime date, 
+            List<JournalEntryDebitLine> debits, 
+            List<JournalEntryCreditLine> credits)
         {
             JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
 
@@ -196,14 +268,26 @@ namespace Pacioli.Tests.Tests
                 yield return new object[]
                 {
                     DateTime.UtcNow,
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 1m) },
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 1m) }
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -1m)
+                    }
                 };
                 yield return new object[]
                 {
                     new DateTime(2020, 2, 15),
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 10_101m) },
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 111_111m) }
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 10_101m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -10_101m)
+                    }
                 };
             }
 
@@ -211,7 +295,9 @@ namespace Pacioli.Tests.Tests
         }
 
         [Theory, ClassData(typeof(JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData))]
-        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(DateTime date, List<JournalEntryLine> debits, List<JournalEntryLine> credits)
+        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(DateTime date, 
+            List<JournalEntryDebitLine> debits, 
+            List<JournalEntryCreditLine> credits)
         {
             JournalEntry sut = new(date, debits, credits);
             
@@ -229,14 +315,26 @@ namespace Pacioli.Tests.Tests
                 yield return new object[]
                 {
                     DateTime.UtcNow,
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 1m) },
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 1m) }
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -1m)
+                    }
                 };
                 yield return new object[]
                 {
                     new DateTime(2020, 2, 15),
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Account"), 10_101m) },
-                    new List<JournalEntryLine>{ new JournalEntryLine(new Account("Another Account"), 111_111m) }
+                    new List<JournalEntryDebitLine>
+                    {
+                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 10_101m)
+                    },
+                    new List<JournalEntryCreditLine>
+                    {
+                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -10_101m)
+                    }
                 };
             }
 
