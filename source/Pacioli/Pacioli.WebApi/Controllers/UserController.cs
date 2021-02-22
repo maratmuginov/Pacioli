@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Pacioli.Lib.Models;
 using Pacioli.WebApi.Models;
 using System;
 using System.Collections.Generic;
@@ -18,10 +17,10 @@ namespace Pacioli.WebApi.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly UserManager<Accountant> _userManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly IConfiguration _configuration;
 
-        public UserController(UserManager<Accountant> userManager, IConfiguration configuration)
+        public UserController(UserManager<IdentityUser> userManager, IConfiguration configuration)
         {
             _configuration = configuration;
             _userManager = userManager;
