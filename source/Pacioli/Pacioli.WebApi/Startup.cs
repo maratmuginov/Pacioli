@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Pacioli.Lib.Models;
-using Pacioli.WebApi.Data;
-using Pacioli.WebApi.Models;
+using Pacioli.Lib.Identity.Data;
+using Pacioli.Lib.Identity.Models;
 using System.Text;
 
 namespace Pacioli.WebApi
@@ -32,8 +32,12 @@ namespace Pacioli.WebApi
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pacioli.WebApi", Version = "v1" });
             });
 
-            services.AddIdentity<Accountant, IdentityRole>()
-                .AddEntityFrameworkStores<AccountantDbContext>()
+            services.AddDbContext<UserIdentityDbContext>(options => 
+                //TODO : Move to In-Memory or PostgresSQL
+                options.UseSqlite(Configuration.GetConnectionString("UserIdentity")));
+
+            services.AddIdentity<User, IdentityRole>()
+                .AddEntityFrameworkStores<UserIdentityDbContext>()
                 .AddDefaultTokenProviders();
 
             services.AddAuthentication(ConfigureAuthentication).AddJwtBearer(ConfigureJwtBearer);
@@ -73,6 +77,7 @@ namespace Pacioli.WebApi
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
