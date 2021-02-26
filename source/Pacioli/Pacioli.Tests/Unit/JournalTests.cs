@@ -1,13 +1,13 @@
-﻿using Pacioli.Lib.Contracts.Models;
-using Pacioli.Lib.Models;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Pacioli.Lib.Contracts.Models;
+using Pacioli.Lib.Models;
 using Xunit;
 
-namespace Pacioli.Tests.Tests
+namespace Pacioli.Tests.Unit
 {
     public class JournalTests
     {
@@ -43,10 +43,7 @@ namespace Pacioli.Tests.Tests
                 };
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         [Fact]
@@ -67,7 +64,7 @@ namespace Pacioli.Tests.Tests
                 var genericTypeArgs = prop.PropertyType.GenericTypeArguments;
                 if (genericTypeArgs.Any())
                 {
-                    //Check if T in ICollection<T> is also mutable.
+                    //Check if generic type T is also mutable. 
                     var genericTypeProperties = genericTypeArgs.SelectMany(type => type.GetProperties());
                     return prop.CanWrite && AnyPropertyIsMutable(genericTypeProperties);
                 }

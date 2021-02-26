@@ -1,26 +1,23 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Pacioli.Lib.Identity.Models;
 using Pacioli.WebApi.Controllers;
 using Pacioli.WebApi.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace Pacioli.Tests.Tests
+namespace Pacioli.Tests.Unit
 {
-    public class AuthorizationAndAuthenticationTests
+    public class AuthTests
     {
         private readonly Mock<IConfiguration> _configuration;
 
-        public AuthorizationAndAuthenticationTests()
+        public AuthTests()
         {
-            _configuration = new Mock<IConfiguration>();
-            _configuration.SetupGet(c => c["JWT:ValidIssuer"]).Returns("https://localhost:5001");
-            _configuration.SetupGet(c => c["JWT:ValidAudience"]).Returns("https://localhost:5001");
-            _configuration.SetupGet(c => c["JWT:Secret"]).Returns("Very long secret key required by encryption algorithm");
+            _configuration = CreateMockConfiguration();
         }
 
         [Fact]
@@ -70,6 +67,15 @@ namespace Pacioli.Tests.Tests
             mockedUserManager.Setup(m => m.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>())).ReturnsAsync(authorizeLogin);
             mockedUserManager.Setup(m => m.GetRolesAsync(It.IsAny<User>())).ReturnsAsync(new List<string> { "Accountant" });
             return mockedUserManager;
+        }
+
+        private static Mock<IConfiguration> CreateMockConfiguration()
+        {
+            var configuration = new Mock<IConfiguration>();
+            configuration.SetupGet(c => c["JWT:ValidIssuer"]).Returns("https://localhost:5001");
+            configuration.SetupGet(c => c["JWT:ValidAudience"]).Returns("https://localhost:5001");
+            configuration.SetupGet(c => c["JWT:Secret"]).Returns("Very long secret key required by encryption algorithm");
+            return configuration;
         }
     }
 }

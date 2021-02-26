@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
-using Pacioli.WebApi;
-using System.Net;
+﻿using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Pacioli.WebApi;
 using Xunit;
 
-namespace Pacioli.Tests.Tests
+namespace Pacioli.Tests.Integration
 {
     public class SecurityTests : IClassFixture<WebApplicationFactory<Startup>>
     {
