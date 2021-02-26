@@ -1,7 +1,7 @@
-﻿using System.Net;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Testing;
+﻿using Microsoft.AspNetCore.Mvc.Testing;
 using Pacioli.WebApi;
+using System.Net;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Pacioli.Tests.Integration
@@ -35,7 +35,7 @@ namespace Pacioli.Tests.Integration
         }
 
         [Theory, InlineData("/api/journal")]
-        public async Task AccountingResourcesRequireAccountingRole(string url)
+        public async Task BusinessResourcesRequireAuthentication(string url)
         {
             var httpClient = _webApiFactory.CreateClient();
 

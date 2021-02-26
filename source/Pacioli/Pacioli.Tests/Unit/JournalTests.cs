@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Pacioli.Lib.Contracts.Models;
+using Pacioli.Lib.Models;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Pacioli.Lib.Contracts.Models;
-using Pacioli.Lib.Models;
 using Xunit;
 
 namespace Pacioli.Tests.Unit

@@ -1,12 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Pacioli.Lib.Identity.Models;
 using Pacioli.WebApi.Controllers;
 using Pacioli.WebApi.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Pacioli.Tests.Unit
@@ -21,7 +21,7 @@ namespace Pacioli.Tests.Unit
         }
 
         [Fact]
-        public async Task AuthorizeUserWithCorrectCredentials()
+        public async Task CorrectCredentialsAuthorizeUser()
         {
             //Arrange
             UserManager<User> userManager = CreateMockUserManager().Object;
@@ -40,7 +40,7 @@ namespace Pacioli.Tests.Unit
         }
 
         [Fact]
-        public async Task RejectUserWithIncorrectCredentials()
+        public async Task IncorrectCredentialsDoNotAuthorizeUser()
         {
             //Arrange
             UserManager<User> userManager = CreateMockUserManager(false).Object;
@@ -58,7 +58,7 @@ namespace Pacioli.Tests.Unit
             Assert.IsType<UnauthorizedResult>(result);
         }
 
-        public static Mock<UserManager<User>> CreateMockUserManager(bool authorizeLogin = true)
+        private static Mock<UserManager<User>> CreateMockUserManager(bool authorizeLogin = true)
         {
             Mock<IUserStore<User>> store = new();
             Mock<UserManager<User>> mockedUserManager = new(store.Object, null, null, null, null, null, null, null, null);
