@@ -32,9 +32,8 @@ namespace Pacioli.WebApi
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pacioli.WebApi", Version = "v1" });
             });
 
-            services.AddDbContext<UserIdentityDbContext>(options => 
-                //TODO : Move to In-Memory or PostgresSQL
-                options.UseSqlite(Configuration.GetConnectionString("UserIdentity")));
+            services.AddDbContext<UserIdentityDbContext>(options =>
+                options.UseInMemoryDatabase("UserIdentity"));
 
             services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<UserIdentityDbContext>()
