@@ -1,8 +1,12 @@
-﻿namespace Pacioli.WebApi.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Pacioli.WebApi.Models
 {
-    public class LoginModel
+    public readonly struct LoginModel
     {
+        [Required]
         public string Email { get; init; }
+        [Required]
         public string Password { get; init; }
     }
 }
