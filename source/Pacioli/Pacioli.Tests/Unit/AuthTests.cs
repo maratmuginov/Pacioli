@@ -24,11 +24,12 @@ namespace Pacioli.Tests.Unit
         public async Task CorrectCredentialsAuthorizeUser()
         {
             //Arrange
-            UserManager<User> userManager = CreateMockUserManager().Object;
-            var sut = new UserController(userManager, _configuration.Object);
+            var userManager = CreateMockUserManager().Object;
+            var roleManager = CreateMockRoleManager().Object;
+            var sut = new UserController(userManager, _configuration.Object, roleManager);
             var loginCredentials = new LoginModel
             {
-                Email = "fakeEmail@fakes.com",
+                Email = "fakeUser@domain.net",
                 Password = "fakePassword"
             };
 
@@ -43,11 +44,12 @@ namespace Pacioli.Tests.Unit
         public async Task IncorrectCredentialsDoNotAuthorizeUser()
         {
             //Arrange
-            UserManager<User> userManager = CreateMockUserManager(false).Object;
-            var sut = new UserController(userManager, _configuration.Object);
+            var userManager = CreateMockUserManager(false).Object;
+            var roleManager = CreateMockRoleManager().Object;
+            var sut = new UserController(userManager, _configuration.Object, roleManager);
             var loginCredentials = new LoginModel
             {
-                Email = "fakeEmail@fakes.com",
+                Email = "fakeUser@domain.net",
                 Password = "fakePassword"
             };
 
@@ -58,15 +60,32 @@ namespace Pacioli.Tests.Unit
             Assert.IsType<UnauthorizedResult>(result);
         }
 
+        private static Mock<RoleManager<IdentityRole>> CreateMockRoleManager()
+        {
+            var mockRoleStore = new Mock<IRoleStore<IdentityRole>>();
+            var mockRoleManager = new Mock<RoleManager<IdentityRole>>(mockRoleStore.Object, null, null, null, null);
+            mockRoleManager.Setup(m => m.RoleExistsAsync(It.IsAny<string>())).ReturnsAsync(true);
+            mockRoleManager.Setup(m => m.CreateAsync(It.IsAny<IdentityRole>())).ReturnsAsync(It.IsAny<IdentityResult>());
+            return mockRoleManager;
+        }
+
         private static Mock<UserManager<User>> CreateMockUserManager(bool authorizeLogin = true)
         {
-            Mock<IUserStore<User>> store = new();
-            Mock<UserManager<User>> mockedUserManager = new(store.Object, null, null, null, null, null, null, null, null);
-            User fakeUser = new() { Email = "fakeUser3@fakes.com" };
-            mockedUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync(fakeUser);
-            mockedUserManager.Setup(m => m.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>())).ReturnsAsync(authorizeLogin);
-            mockedUserManager.Setup(m => m.GetRolesAsync(It.IsAny<User>())).ReturnsAsync(new List<string> { "Accountant" });
-            return mockedUserManager;
+            var mockUserStore = new Mock<IUserStore<User>>();
+            var mockUserManager = new Mock<UserManager<User>>(mockUserStore.Object, null, null, null, null, null, null, null, null);
+            var fakeUser = new User { UserName = "fakeUser", Email = "fakeUser@domain.net" };
+            
+            mockUserManager.Setup(m => 
+                m.FindByEmailAsync(It.IsAny<string>()))
+                .ReturnsAsync(fakeUser);
+            mockUserManager.Setup(m => 
+                m.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>()))
+                .ReturnsAsync(authorizeLogin);
+            mockUserManager.Setup(m => 
+                m.GetRolesAsync(It.IsAny<User>()))
+                .ReturnsAsync(new List<string> { "Accountant" });
+            
+            return mockUserManager;
         }
 
         private static Mock<IConfiguration> CreateMockConfiguration()

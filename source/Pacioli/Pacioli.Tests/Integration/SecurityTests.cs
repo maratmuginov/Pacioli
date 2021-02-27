@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc.Testing;
 using Pacioli.WebApi;
+using Pacioli.WebApi.Models;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -35,13 +38,47 @@ namespace Pacioli.Tests.Integration
         }
 
         [Theory, InlineData("/api/journal")]
-        public async Task BusinessResourcesRequireAuthentication(string url)
+        public async Task BusinessResourcesRequireAuthentication(string resourceUrl)
         {
-            var httpClient = _webApiFactory.CreateClient();
+            using var httpClient = _webApiFactory.CreateClient();
 
-            var response = await httpClient.GetAsync(url);
+            var response = await httpClient.GetAsync(resourceUrl);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Theory, InlineData("/api/journal")]
+        public async Task AccountingResourcesCanBeAccessedByAccountants(string resourceUrl)
+        {
+            //Arrange
+            using var httpClient = _webApiFactory.CreateClient();
+            var registrationCredentials = new RegisterModel
+            {
+                Username = "fakeUser",
+                Email = "fakeUser@domain.net",
+                Password = "fakePassword_12345",
+                Roles = new[] { "Accountant" }
+            };
+            var loginCredentials = new LoginModel
+            {
+                Email = registrationCredentials.Email,
+                Password = registrationCredentials.Password
+            };
+            const string registrationUrl = "/api/user/register";
+            const string loginUrl = "/api/user/login";
+            var resourceRequest = new HttpRequestMessage(HttpMethod.Get, resourceUrl);
+            
+            //Act
+            var registrationResult = await httpClient.PostAsJsonAsync(registrationUrl, registrationCredentials);
+            var loginResponse = await httpClient.PostAsJsonAsync(loginUrl, loginCredentials);
+            var tokenGrant = await loginResponse.Content.ReadFromJsonAsync<TokenGrantModel>();
+            resourceRequest.Headers.Add("Authorization", $"Bearer {tokenGrant.Token}");
+            var resourceResponse = await httpClient.SendAsync(resourceRequest);
+
+            //Assert
+            Assert.Equal(HttpStatusCode.OK, registrationResult.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, resourceResponse.StatusCode);
         }
     }
 }
