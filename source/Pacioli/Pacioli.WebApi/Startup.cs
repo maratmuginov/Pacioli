@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Pacioli.Lib.Identity.Data;
 using Pacioli.Lib.Identity.Models;
 using System.Text;
+using Pacioli.WebApi.Services;
 
 namespace Pacioli.WebApi
 {
@@ -31,6 +32,8 @@ namespace Pacioli.WebApi
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pacioli.WebApi", Version = "v1" });
             });
+
+            services.AddScoped<AccessTokenGenerator>();
 
             services.AddDbContext<UserIdentityDbContext>(options =>
                 options.UseInMemoryDatabase("UserIdentity"));

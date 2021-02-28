@@ -5,6 +5,7 @@ using Moq;
 using Pacioli.Lib.Identity.Models;
 using Pacioli.WebApi.Controllers;
 using Pacioli.WebApi.Models;
+using Pacioli.WebApi.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,10 +15,12 @@ namespace Pacioli.Tests.Unit
     public class AuthTests
     {
         private readonly Mock<IConfiguration> _configuration;
+        private readonly AccessTokenGenerator _accessTokenGenerator;
 
         public AuthTests()
         {
             _configuration = CreateMockConfiguration();
+            _accessTokenGenerator = new AccessTokenGenerator();
         }
 
         [Fact]
@@ -26,7 +29,9 @@ namespace Pacioli.Tests.Unit
             //Arrange
             var userManager = CreateMockUserManager().Object;
             var roleManager = CreateMockRoleManager().Object;
-            var sut = new UserController(userManager, _configuration.Object, roleManager);
+            var sut = new UserController(userManager, roleManager, 
+                _configuration.Object, 
+                _accessTokenGenerator);
             var loginCredentials = new LoginModel
             {
                 Email = "fakeUser@domain.net",
@@ -46,7 +51,9 @@ namespace Pacioli.Tests.Unit
             //Arrange
             var userManager = CreateMockUserManager(false).Object;
             var roleManager = CreateMockRoleManager().Object;
-            var sut = new UserController(userManager, _configuration.Object, roleManager);
+            var sut = new UserController(userManager, roleManager, 
+                _configuration.Object, 
+                _accessTokenGenerator);
             var loginCredentials = new LoginModel
             {
                 Email = "fakeUser@domain.net",
