@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Testing;
+using Pacioli.Lib.Shared.Models;
 using Pacioli.WebApi;
-using Pacioli.WebApi.Models;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -47,35 +47,47 @@ namespace Pacioli.Tests.Integration
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory, InlineData("/api/journal")]
-        public async Task AccountingResourcesCanBeAccessedByAccountants(string resourceUrl)
+        [Fact]
+        public async Task AccountingResourcesCanBeAccessedByAccountants()
         {
             //Arrange
             using var httpClient = _webApiFactory.CreateClient();
-            var registrationCredentials = new RegisterModel
+            var adminLoginCredentials = new LoginModel
+            {
+                Email = "admin@domain.net",
+                Password = "173467321476_Charlie_32789777643_Tango_732_Victor_73117888732476789764376"
+            };
+            var userRegisterCredentials = new RegisterModel
             {
                 Username = "fakeUser",
                 Email = "fakeUser@domain.net",
                 Password = "fakePassword_12345",
-                Roles = new[] { "Accountant" }
+                RoleNames = new[] { "Accountant" }
             };
-            var loginCredentials = new LoginModel
+            var userLoginCredentials = new LoginModel
             {
-                Email = registrationCredentials.Email,
-                Password = registrationCredentials.Password
+                Email = userRegisterCredentials.Email,
+                Password = userRegisterCredentials.Password
             };
+            const string resourceUrl = "/api/journal";
             const string registrationUrl = "/api/user/register";
             const string loginUrl = "/api/user/login";
             var resourceRequest = new HttpRequestMessage(HttpMethod.Get, resourceUrl);
-            
+
             //Act
-            var registrationResult = await httpClient.PostAsJsonAsync(registrationUrl, registrationCredentials);
-            var loginResponse = await httpClient.PostAsJsonAsync(loginUrl, loginCredentials);
-            var tokenGrant = await loginResponse.Content.ReadFromJsonAsync<TokenGrantModel>();
-            resourceRequest.Headers.Add("Authorization", $"Bearer {tokenGrant.Token}");
+            var adminLoginResponse = await httpClient.PostAsJsonAsync(loginUrl, adminLoginCredentials);
+            string adminToken = await adminLoginResponse.Content.ReadAsStringAsync();
+            //TODO : Haven't had much success adding json to HttpRequestMessage's. Using those would be cleaner than setting DefaultRequestHeaders of HttpClient.
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {adminToken}");
+            var registrationResult = await httpClient.PostAsJsonAsync(registrationUrl, userRegisterCredentials);
+            httpClient.DefaultRequestHeaders.Remove("Authorization");
+            var loginResponse = await httpClient.PostAsJsonAsync(loginUrl, userLoginCredentials);
+            string userToken = await loginResponse.Content.ReadAsStringAsync();
+            resourceRequest.Headers.Add("Authorization", $"Bearer {userToken}");
             var resourceResponse = await httpClient.SendAsync(resourceRequest);
 
             //Assert
+            Assert.Equal(HttpStatusCode.OK, adminLoginResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, registrationResult.StatusCode);
             Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, resourceResponse.StatusCode);
