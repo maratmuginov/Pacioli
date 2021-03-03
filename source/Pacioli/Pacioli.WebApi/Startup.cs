@@ -86,6 +86,8 @@ namespace Pacioli.WebApi
             {
                 endpoints.MapControllers();
             });
+
+            UserIdentityDbContext.SeedUsersAsync(app.ApplicationServices).Wait();
         }
     }
 }
