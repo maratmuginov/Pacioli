@@ -73,23 +73,28 @@ namespace Pacioli.Tests.Integration
             const string registrationUrl = "/api/user/register";
             const string loginUrl = "/api/user/login";
             var resourceRequest = new HttpRequestMessage(HttpMethod.Get, resourceUrl);
+            var userRegisterRequest = new HttpRequestMessage(HttpMethod.Post, registrationUrl)
+            {
+                Content = JsonContent.Create(userRegisterCredentials)
+            };
 
             //Act
             var adminLoginResponse = await httpClient.PostAsJsonAsync(loginUrl, adminLoginCredentials);
             string adminToken = await adminLoginResponse.Content.ReadAsStringAsync();
-            //TODO : Haven't had much success adding json to HttpRequestMessage's. Using those would be cleaner than setting DefaultRequestHeaders of HttpClient.
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {adminToken}");
-            var registrationResult = await httpClient.PostAsJsonAsync(registrationUrl, userRegisterCredentials);
-            httpClient.DefaultRequestHeaders.Remove("Authorization");
-            var loginResponse = await httpClient.PostAsJsonAsync(loginUrl, userLoginCredentials);
-            string userToken = await loginResponse.Content.ReadAsStringAsync();
+
+            userRegisterRequest.Headers.Add("Authorization", $"Bearer {adminToken}");
+            var userRegisterResponse = await httpClient.SendAsync(userRegisterRequest);
+
+            var userLoginResponse = await httpClient.PostAsJsonAsync(loginUrl, userLoginCredentials);
+            string userToken = await userLoginResponse.Content.ReadAsStringAsync();
+
             resourceRequest.Headers.Add("Authorization", $"Bearer {userToken}");
             var resourceResponse = await httpClient.SendAsync(resourceRequest);
 
             //Assert
             Assert.Equal(HttpStatusCode.OK, adminLoginResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, registrationResult.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, userRegisterResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, userLoginResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, resourceResponse.StatusCode);
         }
     }
