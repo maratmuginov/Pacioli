@@ -5,6 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="seedUsers.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="seedUsers.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="5.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
@@ -13,7 +23,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pacioli.Lib.Identity\Pacioli.Lib.Identity.csproj" />
+    <ProjectReference Include="..\Pacioli.Lib.Shared\Pacioli.Lib.Shared.csproj" />
     <ProjectReference Include="..\Pacioli.Lib\Pacioli.Lib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="roleNames.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
