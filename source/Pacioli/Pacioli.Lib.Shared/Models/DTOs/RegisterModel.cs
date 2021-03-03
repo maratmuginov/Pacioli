@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Pacioli.WebApi.Models
+namespace Pacioli.Lib.Shared.Models
 {
     public readonly struct RegisterModel
     {
@@ -9,7 +9,7 @@ namespace Pacioli.WebApi.Models
         [Required]
         public string Username { get; init; }
         [Required]
-        public string[] Roles { get; init; }
+        public string[] RoleNames { get; init; }
         [Required]
         public string Password { get; init; }
     }

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Pacioli.WebApi.Models
+namespace Pacioli.Lib.Shared.Models
 {
     public readonly struct LoginModel
     {
