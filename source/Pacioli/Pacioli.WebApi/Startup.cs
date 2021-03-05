@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Pacioli.Lib.Identity.Data;
 using Pacioli.Lib.Identity.Models;
 using System.Text;
+using Pacioli.WebApi.Services;
 
 namespace Pacioli.WebApi
 {
@@ -32,9 +33,10 @@ namespace Pacioli.WebApi
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pacioli.WebApi", Version = "v1" });
             });
 
-            services.AddDbContext<UserIdentityDbContext>(options => 
-                //TODO : Move to In-Memory or PostgresSQL
-                options.UseSqlite(Configuration.GetConnectionString("UserIdentity")));
+            services.AddScoped<AccessTokenGenerator>();
+
+            services.AddDbContext<UserIdentityDbContext>(options =>
+                options.UseInMemoryDatabase("UserIdentity"));
 
             services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<UserIdentityDbContext>()
@@ -84,6 +86,8 @@ namespace Pacioli.WebApi
             {
                 endpoints.MapControllers();
             });
+
+            UserIdentityDbContext.SeedUsersAsync(app.ApplicationServices).Wait();
         }
     }
 }

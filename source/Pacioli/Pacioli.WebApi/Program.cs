@@ -16,7 +16,11 @@ namespace Pacioli.WebApi
                 {
                     webBuilder.UseStartup<Startup>()
                         //This has to be explicitly set to pass the test.
-                        .UseSetting("https_port", "443");
+                        .UseSetting("https_port", "443")
+                        .UseDefaultServiceProvider(options =>
+                        {
+                            options.ValidateScopes = false;
+                        });
                 });
     }
 }
