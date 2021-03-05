@@ -29,7 +29,7 @@ namespace Pacioli.Lib.Models
             EnsureArgNotEmpty(debits, nameof(debits), "Debits should not be empty");
             EnsureArgNotEmpty(credits, nameof(credits), "Credits should not be empty");
 
-            bool hasCommonAccount = debits.Any(dr => credits.Any(cr => dr.Account.Equals(cr.Account)));
+            bool hasCommonAccount = debits.Any(dr => credits.Any(cr => dr.Account.Name.Equals(cr.Account.Name)));
             if (hasCommonAccount)
                 throw new ArgumentException("Accounts should be exclusive to debit or credit side of the journal entry.");
 
