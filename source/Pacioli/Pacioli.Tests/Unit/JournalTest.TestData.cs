@@ -34,24 +34,22 @@ namespace Pacioli.Tests.Unit
                 DateTime.UtcNow,
                 new List<JournalEntryDebitLine> 
                 { 
-                    new(new Account("Account1", NormalBalance.Debit), 100m),
-                    new(new Account("Account2", NormalBalance.Debit), 100m)
+                    new(new Account("Account1", NormalBalance.Debit), 200m),
                 },
                 new List<JournalEntryCreditLine> 
                 { 
-                    new(new Account("Account1", NormalBalance.Credit), -200m) 
+                    new(new Account("Account1", NormalBalance.Debit), -200m) 
                 }
             },
             {
                 DateTime.UtcNow,
                 new List<JournalEntryDebitLine> 
                 { 
-                    new(new Account("Test", NormalBalance.Debit), 6.23m) 
+                    new(new Account("Test", NormalBalance.Credit), 6.23m) 
                 },
                 new List<JournalEntryCreditLine> 
                 { 
-                    new(new Account("Test", NormalBalance.Debit), -5.23m),
-                    new(new Account("Test", NormalBalance.Debit), -1.00m)
+                    new(new Account("Test", NormalBalance.Credit), -6.23m),
                 }
             },
         };
