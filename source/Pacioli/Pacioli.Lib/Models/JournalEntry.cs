@@ -8,18 +8,21 @@ namespace Pacioli.Lib.Models
 {
     public record JournalEntry
     {
-        public JournalEntry(DateTime date, string description, 
+        public JournalEntry(string userId, DateTime date, string description, 
             [NotNull] ICollection<JournalEntryDebitLine> debits, 
             [NotNull] ICollection<JournalEntryCreditLine> credits) : 
-            this(date, debits, credits)
+            this(userId, date, debits, credits)
         {
             this.Description = description;
         }
 
-        public JournalEntry(DateTime date, 
+        public JournalEntry(string userId, DateTime date, 
             [NotNull] ICollection<JournalEntryDebitLine> debits, 
             [NotNull] ICollection<JournalEntryCreditLine> credits)
         {
+            if (string.IsNullOrWhiteSpace(userId) is true)
+                throw new ArgumentException("UserId cannot be null", nameof(userId));
+
             EnsureArgsNotNull(debits, nameof(debits), "Debits should not be null.");
             EnsureArgsNotNull(credits, nameof(credits), "Credits should not be null.");
             
@@ -35,11 +38,13 @@ namespace Pacioli.Lib.Models
 
             EnsureDebitsAndCreditsBalance(debits, credits);
 
+            UserId = userId;
             Date = date;
             Debits = new List<JournalEntryDebitLine>(debits);
             Credits = new List<JournalEntryCreditLine>(credits);
         }
 
+        public string UserId { get; }
         public DateTime Date { get; }
         public string Description { get; }
         public List<JournalEntryDebitLine> Debits { get; }

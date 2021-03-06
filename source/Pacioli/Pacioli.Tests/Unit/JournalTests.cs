@@ -11,10 +11,10 @@ namespace Pacioli.Tests.Unit
     public partial class JournalTests
     {
         [Theory, MemberData(nameof(NormalBalance_TestData))]
-        public void JournalEntriesAreBalancedByNetZeroNormalBalance(DateTime date, 
+        public void JournalEntriesAreBalancedByNetZeroNormalBalance(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, List<JournalEntryCreditLine> credits)
         {
-            var sut = new JournalEntry(date, debits, credits);
+            var sut = new JournalEntry(userId, date, debits, credits);
             const decimal expectedVariance = 0m;
 
             decimal debitsSum = sut.Debits.Sum(dr => dr.Amount);
@@ -61,11 +61,11 @@ namespace Pacioli.Tests.Unit
         }
 
         [Theory, MemberData(nameof(SameAccountsOnCreditAndDebit_TestData))]
-        public void AccountsAreExclusiveToDebitOrCreditSide(DateTime date, 
+        public void AccountsAreExclusiveToDebitOrCreditSide(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
             
             Assert.Throws<ArgumentException>(CreateJournalEntry);
         }
@@ -106,32 +106,32 @@ namespace Pacioli.Tests.Unit
         }
 
         [Theory, MemberData(nameof(Unbalanced_TestData))]
-        public void JournalDoesNotAcceptUnbalancedEntries(DateTime date, 
+        public void JournalDoesNotAcceptUnbalancedEntries(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
 
             Assert.ThrowsAny<Exception>(CreateJournalEntry);
         }
 
         [Theory, MemberData(nameof(NullAndEmpty_TestData))]
-        public void JournalEntryThrowsExceptionOnInvalidArgument(DateTime date, 
+        public void JournalEntryThrowsExceptionOnInvalidArgument(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
             
             Assert.ThrowsAny<Exception>(CreateJournalEntry);
         }
 
 
         [Theory, MemberData(nameof(NormalBalance_TestData))]
-        public void JournalEntryDoesNotThrowExceptionWithValidArguments(DateTime date, 
+        public void JournalEntryDoesNotThrowExceptionWithValidArguments(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
 
             var exception = Record.Exception(CreateJournalEntry);
 
@@ -139,15 +139,16 @@ namespace Pacioli.Tests.Unit
         }
 
         [Theory, MemberData(nameof(NormalBalance_TestData))]
-        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(DateTime date, 
+        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry sut = new(date, debits, credits);
+            JournalEntry sut = new(userId, date, debits, credits);
             
             var debitsNotInDebits = debits.Except(sut.Debits);
             var creditsNotInCredits = credits.Except(sut.Credits);
-            
+
+            Assert.True(sut.UserId == userId);
             Assert.True(sut.Date == date);
             Assert.True(debitsNotInDebits.Any() is false && creditsNotInCredits.Any() is false);
         }
