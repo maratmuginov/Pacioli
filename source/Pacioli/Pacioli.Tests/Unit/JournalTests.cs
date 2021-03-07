@@ -152,5 +152,36 @@ namespace Pacioli.Tests.Unit
             Assert.True(sut.Date == date);
             Assert.True(debitsNotInDebits.Any() is false && creditsNotInCredits.Any() is false);
         }
+
+        [Theory, MemberData(nameof(EntryCreatorAndReviewer_TestData))]
+        public void EntryCreatorCannotBeSameAsReviewer(string userId, DateTime date,
+            List<JournalEntryDebitLine> debits,
+            List<JournalEntryCreditLine> credits, 
+            Review review,
+            bool expected)
+        {
+            JournalEntry newJournalEntry = new(userId, date, debits, credits);
+
+            var sut = Record.Exception(() => newJournalEntry.AddReview(review));
+
+            Assert.Equal(expected, sut is not null);
+        }
+
+        [Theory, MemberData(nameof(NewReviewNotPermittedOnClosedJournalEntries_TestData))]
+        public void CannotAddReviewOnApprovedReviews(string userId, DateTime date,
+            List<JournalEntryDebitLine> debits,
+            List<JournalEntryCreditLine> credits,
+            Review[] reviews)
+        {
+            JournalEntry newJournalEntry = new(userId, date, debits, credits);
+
+            void sut()
+            {
+                foreach (var review in reviews)
+                    newJournalEntry.AddReview(review);
+            };
+
+            Assert.Throws<InvalidOperationException>(sut);
+        }
     }
 }

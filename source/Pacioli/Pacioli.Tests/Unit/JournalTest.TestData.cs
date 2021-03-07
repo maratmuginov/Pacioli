@@ -92,5 +92,58 @@ namespace Pacioli.Tests.Unit
                 new List<JournalEntryCreditLine> { new(new Account("Another Account", NormalBalance.Credit), -1m) }
             }
         };
+
+        public static TheoryData<string, DateTime, List<JournalEntryDebitLine>, List<JournalEntryCreditLine>, Review, bool> EntryCreatorAndReviewer_TestData =>
+        new()
+        {
+            {
+                "FakeUser",
+                DateTime.UtcNow,
+                new List<JournalEntryDebitLine> { new(new Account("Account1", NormalBalance.Debit), 100m) },
+                new List<JournalEntryCreditLine> { new(new Account("Account2", NormalBalance.Credit), -100m) },
+                new Review("FakeUser", true),
+                true
+            },
+            {
+                "FakeUser",
+                DateTime.UtcNow,
+                new List<JournalEntryDebitLine> { new(new Account("Account1", NormalBalance.Debit), 100m) },
+                new List<JournalEntryCreditLine> { new(new Account("Account2", NormalBalance.Credit), -100m) },
+                new Review("FakeReviewer", true),
+                false
+            }
+        };
+
+        public static TheoryData<string, DateTime, List<JournalEntryDebitLine>, List<JournalEntryCreditLine>, Review[]> NewReviewNotPermittedOnClosedJournalEntries_TestData =>
+        new()
+        {
+            {
+                "FakeUser",
+                DateTime.UtcNow,
+                new List<JournalEntryDebitLine> { new(new Account("Account1", NormalBalance.Debit), 100m) },
+                new List<JournalEntryCreditLine> { new(new Account("Account2", NormalBalance.Credit), -100m) },
+                new Review[]
+                {
+                    new Review("FakeReviewer", false, "not true"),
+                    new Review("FakeReviewer", false, "not faked data"),
+                    new Review("FakeReviewer", true),
+                    new Review("FakeReviewer", true, "follow up review"),
+                }
+            },
+            {
+                "FakeUser",
+                DateTime.UtcNow,
+                new List<JournalEntryDebitLine> { new(new Account("Account1", NormalBalance.Debit), 100m) },
+                new List<JournalEntryCreditLine> { new(new Account("Account2", NormalBalance.Credit), -100m) },
+                new Review[]
+                {
+                    new Review("FakeReviewer", false, "not true"),
+                    new Review("FakeReviewer2", false, "faked data"),
+                    new Review("FakeReviewer", false, "we will get in trouble with IRS"),
+                    new Review("FakeReviewer", true),
+                    new Review("FakeReviewer2", false, "follow up review"),
+                }
+            },
+        };
     }
 }

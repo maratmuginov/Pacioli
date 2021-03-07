@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Pacioli.Lib.Contracts.Models;
@@ -20,7 +21,7 @@ namespace Pacioli.Lib.Models
             [NotNull] ICollection<JournalEntryDebitLine> debits, 
             [NotNull] ICollection<JournalEntryCreditLine> credits)
         {
-            if (string.IsNullOrWhiteSpace(userId) is true)
+            if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("UserId cannot be null", nameof(userId));
 
             EnsureArgsNotNull(debits, nameof(debits), "Debits should not be null.");
@@ -49,6 +50,26 @@ namespace Pacioli.Lib.Models
         public string Description { get; }
         public List<JournalEntryDebitLine> Debits { get; }
         public List<JournalEntryCreditLine> Credits { get; }
+        public bool Closed { get; private set; }
+
+        public ImmutableList<Review> Reviews { get; private set; }
+
+        public void AddReview(Review review)
+        {
+            if (Closed)
+                throw new InvalidOperationException("Journal is already approved and closed");
+
+            if (string.Compare(UserId, review.Reviewer, true) == 0)
+                throw new ArgumentException("Accountant cannot review and approve own journal entry", nameof(review.Reviewer));
+
+            if (review.Approved)
+                Closed = true; //maybe emit event so a service can save journal
+
+            if (Reviews is null)
+                Reviews = ImmutableList.Create(review);
+            else
+                Reviews.Add(review);
+        }
 
         private static void EnsureArgsNotNull(object param, string paramName, string exceptionMessage)
         {
