@@ -50,25 +50,23 @@ namespace Pacioli.Lib.Models
         public string Description { get; }
         public List<JournalEntryDebitLine> Debits { get; }
         public List<JournalEntryCreditLine> Credits { get; }
-        public bool Closed { get; private set; }
+        private bool closed = false;
+        public bool Closed { get => closed; }
 
-        public ImmutableList<Review> Reviews { get; private set; }
+        public ImmutableList<Review> Reviews { get; private set; } = ImmutableList.Create<Review>();
 
         public void AddReview(Review review)
         {
             if (Closed)
                 throw new InvalidOperationException("Journal is already approved and closed");
 
-            if (string.Compare(UserId, review.Reviewer, true) == 0)
+            if (UserId == review.Reviewer)
                 throw new ArgumentException("Accountant cannot review and approve own journal entry", nameof(review.Reviewer));
 
             if (review.Approved)
-                Closed = true; //maybe emit event so a service can save journal
+                closed = true;
 
-            if (Reviews is null)
-                Reviews = ImmutableList.Create(review);
-            else
-                Reviews.Add(review);
+            Reviews.Add(review);
         }
 
         private static void EnsureArgsNotNull(object param, string paramName, string exceptionMessage)

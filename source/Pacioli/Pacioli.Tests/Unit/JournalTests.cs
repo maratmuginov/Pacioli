@@ -5,11 +5,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Pacioli.Tests.Unit
 {
     public partial class JournalTests
     {
+        private readonly ITestOutputHelper _testOutputHelper;
+
+        public JournalTests(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
         [Theory, MemberData(nameof(NormalBalance_TestData))]
         public void JournalEntriesAreBalancedByNetZeroNormalBalance(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, List<JournalEntryCreditLine> credits)
@@ -35,7 +43,7 @@ namespace Pacioli.Tests.Unit
             Assert.False(anyPropertyIsMutable);
         }
 
-        private static bool AnyPropertyIsMutable(IEnumerable<PropertyInfo> properties)
+        private bool AnyPropertyIsMutable(IEnumerable<PropertyInfo> properties)
         {
             return properties.Any(prop =>
             {
@@ -44,8 +52,10 @@ namespace Pacioli.Tests.Unit
                 {
                     //Check if generic type T is also mutable. 
                     var genericTypeProperties = genericTypeArgs.SelectMany(type => type.GetProperties());
+                    _testOutputHelper.WriteLine(prop.Name);
                     return prop.CanWrite && AnyPropertyIsMutable(genericTypeProperties);
                 }
+                _testOutputHelper.WriteLine(prop.Name);
                 return prop.CanWrite;
             });
         }
