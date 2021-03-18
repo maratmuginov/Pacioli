@@ -6,9 +6,6 @@ namespace Pacioli.Lib.Models
     {
         public Review(string userId, bool approved, string comment) : this(userId, approved)
         {
-            if (string.IsNullOrEmpty(comment))
-                throw new ArgumentException("Comment cannot be empty", nameof(comment));
-
             Comment = comment;
         }
 
