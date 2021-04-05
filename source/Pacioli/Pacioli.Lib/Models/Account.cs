@@ -8,7 +8,7 @@
             NormalBalance = normalBalance;
         }
 
-        public string Name { get; }
-        public NormalBalance NormalBalance { get; }
+        public string Name { get; init;  }
+        public NormalBalance NormalBalance { get; init;  }
     }
 }

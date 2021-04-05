@@ -1,21 +1,28 @@
 ﻿using Pacioli.Lib.Contracts.Models;
 using Pacioli.Lib.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Pacioli.Tests.Unit
 {
-    public class JournalTests
+    public partial class JournalTests
     {
-        [Theory, ClassData(typeof(JournalEntriesAreBalancedByNetZeroNormalBalance_TestData))]
-        public void JournalEntriesAreBalancedByNetZeroNormalBalance(DateTime date, 
+        private readonly ITestOutputHelper _testOutputHelper;
+
+        public JournalTests(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
+        [Theory, MemberData(nameof(NormalBalance_TestData))]
+        public void JournalEntriesAreBalancedByNetZeroNormalBalance(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, List<JournalEntryCreditLine> credits)
         {
-            var sut = new JournalEntry(date, debits, credits);
+            var sut = new JournalEntry(userId, date, debits, credits);
             const decimal expectedVariance = 0m;
 
             decimal debitsSum = sut.Debits.Sum(dr => dr.Amount);
@@ -23,27 +30,6 @@ namespace Pacioli.Tests.Unit
             var actualVariance = debitsSum + creditsSum;
 
             Assert.Equal(expectedVariance, actualVariance);
-        }
-
-        private class JournalEntriesAreBalancedByNetZeroNormalBalance_TestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[]
-                {
-                    DateTime.UtcNow, 
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 100m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -100m)
-                    }
-                };
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         [Fact]
@@ -57,7 +43,7 @@ namespace Pacioli.Tests.Unit
             Assert.False(anyPropertyIsMutable);
         }
 
-        private static bool AnyPropertyIsMutable(IEnumerable<PropertyInfo> properties)
+        private bool AnyPropertyIsMutable(IEnumerable<PropertyInfo> properties)
         {
             return properties.Any(prop =>
             {
@@ -66,8 +52,10 @@ namespace Pacioli.Tests.Unit
                 {
                     //Check if generic type T is also mutable. 
                     var genericTypeProperties = genericTypeArgs.SelectMany(type => type.GetProperties());
+                    _testOutputHelper.WriteLine(prop.Name);
                     return prop.CanWrite && AnyPropertyIsMutable(genericTypeProperties);
                 }
+                _testOutputHelper.WriteLine(prop.Name);
                 return prop.CanWrite;
             });
         }
@@ -82,47 +70,14 @@ namespace Pacioli.Tests.Unit
             Assert.Equal(account, sameAccount);
         }
 
-        [Theory, ClassData(typeof(AccountsAreExclusiveToDebitOrCreditSide_TestData))]
-        public void AccountsAreExclusiveToDebitOrCreditSide(DateTime date, 
+        [Theory, MemberData(nameof(SameAccountsOnCreditAndDebit_TestData))]
+        public void AccountsAreExclusiveToDebitOrCreditSide(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
             
             Assert.Throws<ArgumentException>(CreateJournalEntry);
-        }
-        
-        private class AccountsAreExclusiveToDebitOrCreditSide_TestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[]
-                {
-                    DateTime.UtcNow, 
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Account", NormalBalance.Debit), -1m)
-                    }
-                };
-                yield return new object[]
-                {
-                    DateTime.UtcNow, 
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Another Account", NormalBalance.Debit), 5.23m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Debit), -5.23m)
-                    },
-                };
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
         
         [Fact]
@@ -160,184 +115,83 @@ namespace Pacioli.Tests.Unit
             Assert.True(propertiesAreImmutable);
         }
 
-        [Theory, ClassData(typeof(JournalDoesNotAcceptUnbalancedEntries_TestData))]
-        public void JournalDoesNotAcceptUnbalancedEntries(DateTime date, 
+        [Theory, MemberData(nameof(Unbalanced_TestData))]
+        public void JournalDoesNotAcceptUnbalancedEntries(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
 
             Assert.ThrowsAny<Exception>(CreateJournalEntry);
         }
 
-        private class JournalDoesNotAcceptUnbalancedEntries_TestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[]
-                {
-                    DateTime.UtcNow, 
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 10m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -20m)
-                    }
-                };
-                yield return new object[]
-                {
-                    DateTime.UtcNow,
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 8324m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -2313m)
-                    }
-                };
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        [Theory, ClassData(typeof(JournalEntryThrowsExceptionOnInvalidArgument_TestData))]
-        public void JournalEntryThrowsExceptionOnInvalidArgument(DateTime date, 
+        [Theory, MemberData(nameof(NullAndEmpty_TestData))]
+        public void JournalEntryThrowsExceptionOnInvalidArgument(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
             
             Assert.ThrowsAny<Exception>(CreateJournalEntry);
         }
 
-        private class JournalEntryThrowsExceptionOnInvalidArgument_TestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[]
-                {
-                    new DateTime(),
-                    new List<JournalEntryDebitLine>(),
-                    new List<JournalEntryCreditLine>()
-                };
-                yield return new object[]
-                {
-                    null,
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
-                    },
-                    new List<JournalEntryCreditLine>()
-                };
-                yield return new object[]
-                {
-                    null,
-                    new List<JournalEntryDebitLine>(),
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -1m)
-                    }
-                };
-            }
 
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        [Theory, ClassData(typeof(JournalEntryDoesNotThrowExceptionWithValidArguments_TestData))]
-        public void JournalEntryDoesNotThrowExceptionWithValidArguments(DateTime date, 
+        [Theory, MemberData(nameof(NormalBalance_TestData))]
+        public void JournalEntryDoesNotThrowExceptionWithValidArguments(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry CreateJournalEntry() => new JournalEntry(date, debits, credits);
+            JournalEntry CreateJournalEntry() => new JournalEntry(userId, date, debits, credits);
 
             var exception = Record.Exception(CreateJournalEntry);
 
             Assert.Null(exception);
         }
 
-        private class JournalEntryDoesNotThrowExceptionWithValidArguments_TestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[]
-                {
-                    DateTime.UtcNow,
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -1m)
-                    }
-                };
-                yield return new object[]
-                {
-                    new DateTime(2020, 2, 15),
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 10_101m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -10_101m)
-                    }
-                };
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        [Theory, ClassData(typeof(JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData))]
-        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(DateTime date, 
+        [Theory, MemberData(nameof(NormalBalance_TestData))]
+        public void JournalEntryMembersValuesAreTheSameAsConstructorArguments(string userId, DateTime date, 
             List<JournalEntryDebitLine> debits, 
             List<JournalEntryCreditLine> credits)
         {
-            JournalEntry sut = new(date, debits, credits);
+            JournalEntry sut = new(userId, date, debits, credits);
             
             var debitsNotInDebits = debits.Except(sut.Debits);
             var creditsNotInCredits = credits.Except(sut.Credits);
-            
+
+            Assert.True(sut.UserId == userId);
             Assert.True(sut.Date == date);
             Assert.True(debitsNotInDebits.Any() is false && creditsNotInCredits.Any() is false);
         }
 
-        private class JournalEntryMembersValuesAreTheSameAsConstructorArguments_TestData : IEnumerable<object[]>
+        [Theory, MemberData(nameof(EntryCreatorAndReviewer_TestData))]
+        public void EntryCreatorCannotBeSameAsReviewer(string userId, DateTime date,
+            List<JournalEntryDebitLine> debits,
+            List<JournalEntryCreditLine> credits, 
+            Review review,
+            bool expected)
         {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[]
-                {
-                    DateTime.UtcNow,
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 1m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -1m)
-                    }
-                };
-                yield return new object[]
-                {
-                    new DateTime(2020, 2, 15),
-                    new List<JournalEntryDebitLine>
-                    {
-                        new JournalEntryDebitLine(new Account("Account", NormalBalance.Debit), 10_101m)
-                    },
-                    new List<JournalEntryCreditLine>
-                    {
-                        new JournalEntryCreditLine(new Account("Another Account", NormalBalance.Credit), -10_101m)
-                    }
-                };
-            }
+            JournalEntry newJournalEntry = new(userId, date, debits, credits);
 
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            var sut = Record.Exception(() => newJournalEntry.AddReview(review));
+
+            Assert.Equal(expected, sut is not null);
+        }
+
+        [Theory, MemberData(nameof(NewReviewNotPermittedOnClosedJournalEntries_TestData))]
+        public void CannotAddReviewOnApprovedReviews(string userId, DateTime date,
+            List<JournalEntryDebitLine> debits,
+            List<JournalEntryCreditLine> credits,
+            Review[] reviews)
+        {
+            JournalEntry newJournalEntry = new(userId, date, debits, credits);
+
+            void sut()
+            {
+                foreach (var review in reviews)
+                    newJournalEntry.AddReview(review);
+            };
+
+            Assert.Throws<InvalidOperationException>(sut);
         }
     }
-
-    
 }
